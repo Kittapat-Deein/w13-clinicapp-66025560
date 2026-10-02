@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-
+ 
 const API_BASE = import.meta.env.VITE_API_BASE || '/api';
-
+ 
 export default function App() {
   const [doctors, setDoctors] = useState([]);
   const [appointments, setAppointments] = useState([]);
@@ -9,7 +9,8 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({ doctor_id: '', patient_name: '', slot: '' });
   const [submitting, setSubmitting] = useState(false);
-
+  const [cancellingId, setCancellingId] = useState(null);
+ 
   async function load() {
     try {
       setError(null);
@@ -26,9 +27,9 @@ export default function App() {
       setLoading(false);
     }
   }
-
+ 
   useEffect(() => { load(); }, []);
-
+ 
   async function onSubmit(e) {
     e.preventDefault();
     setSubmitting(true);
@@ -51,22 +52,39 @@ export default function App() {
       setSubmitting(false);
     }
   }
-
+ 
+  async function onCancel(id) {
+    if (!confirm('ยกเลิกนัดนี้จริงไหม?')) return;
+    setCancellingId(id);
+    setError(null);
+    try {
+      const r = await fetch(`${API_BASE}/appointments/${id}`, {
+        method: 'DELETE',
+      });
+      if (!r.ok) throw await r.json().catch(() => ({ error: 'http_error' }));
+      await load();
+    } catch (e) {
+      setError(e.error || 'failed_to_cancel');
+    } finally {
+      setCancellingId(null);
+    }
+  }
+ 
   return (
     <main style={{ fontFamily: 'system-ui, sans-serif', maxWidth: 720, margin: '2rem auto', padding: '0 1rem' }}>
-      <h1>Clinic Kittapat — จองนัดออนไลน์</h1>
+      <h1>Bangkok Hospital — Clinic Appointments</h1>
       <p style={{ color: '#666' }}>225381 · W13 starter</p>
-
+ 
       {loading && <p>Loading…</p>}
       {error && <p style={{ color: '#c00' }}>Error: {error}</p>}
-
+ 
       <section>
         <h2>Doctors</h2>
         {doctors.length === 0
           ? <p>(no doctors — load schema.sql + seed-data.sql first)</p>
           : <ul>{doctors.map(d => <li key={d.id}>{d.name} — <em>{d.specialty}</em></li>)}</ul>}
       </section>
-
+ 
       <section>
         <h2>Book an appointment</h2>
         <form onSubmit={onSubmit} style={{ display: 'grid', gap: '0.5rem', maxWidth: 360 }}>
@@ -103,7 +121,7 @@ export default function App() {
           </button>
         </form>
       </section>
-
+ 
       <section>
         <h2>Appointments</h2>
         {appointments.length === 0
@@ -115,6 +133,7 @@ export default function App() {
                   <th style={{ padding: '0.25rem' }}>Slot</th>
                   <th style={{ padding: '0.25rem' }}>Patient</th>
                   <th style={{ padding: '0.25rem' }}>Doctor</th>
+                  <th style={{ padding: '0.25rem' }}>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -123,6 +142,7 @@ export default function App() {
                     <td style={{ padding: '0.25rem' }}>{new Date(a.slot).toLocaleString()}</td>
                     <td style={{ padding: '0.25rem' }}>{a.patient_name}</td>
                     <td style={{ padding: '0.25rem' }}>{a.doctor_name} <em>({a.specialty})</em></td>
+                    <td style={{ padding: '0.25rem' }}><button onClick={() => onCancel(a.id)} disabled={cancellingId === a.id} style={{ color: '#c00' }}>{cancellingId === a.id ? 'Cancelling…' : 'Cancel'}</button></td>
                   </tr>
                 ))}
               </tbody>
