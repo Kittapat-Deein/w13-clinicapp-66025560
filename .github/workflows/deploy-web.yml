@@ -1,0 +1,44 @@
+name: Build and deploy Web app to Azure Storage Static Website
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20.x'
+
+      - name: Install and Build Web
+        working-directory: ./web
+        env:
+          VITE_API_BASE: https://app-clinicapp-api-66025560-fqgphhcce7f4ajba.southeastasia-01.azurewebsites.net
+        run: |
+          npm install
+          npm run build
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_E7647764E75A49229E01AD92D8C07F2C }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_1F670109D01049B7AC22125767DCE628 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_2C3D9728C1D24FD0AB799468C8CD89C4 }}
+
+      - name: Deploy to Azure Storage Static Website
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            az storage blob upload-batch --account-name stclinic66025560 --auth-mode login -d '$web' -s ./web/dist --overwrite
