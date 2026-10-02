@@ -41,4 +41,6 @@ jobs:
         uses: azure/cli@v2
         with:
           inlineScript: |
-            az storage blob upload-batch --account-name stclinic66025560 -d '$web' -s ./web/dist --overwrite
+            az account set --subscription "${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_2C3D9728C1D24FD0AB799468C8CD89C4 }}"
+            CONN_STR=$(az storage account show-connection-string --name stclinic66025560 --resource-group rg-clinicapp-dev --query connectionString -o tsv)
+            az storage blob upload-batch --connection-string "$CONN_STR" -d '$web' -s ./web/dist --overwrite
