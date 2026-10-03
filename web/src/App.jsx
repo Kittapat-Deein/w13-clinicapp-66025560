@@ -2,12 +2,17 @@ import { useEffect, useState } from 'react';
 
 const API_BASE = import.meta.env.VITE_API_BASE || '/api';
 
-const WHISKEY_COLORS = {
-  1: { from: '#b45309', to: '#92400e', tag: '#fef3c7', tagText: '#78350f' },   // Scotch - amber
-  2: { from: '#dc2626', to: '#991b1b', tag: '#fee2e2', tagText: '#7f1d1d' },   // American - red
-  3: { from: '#047857', to: '#065f46', tag: '#d1fae5', tagText: '#064e3b' },   // Japanese - green
-  4: { from: '#1d4ed8', to: '#1e3a8a', tag: '#dbeafe', tagText: '#1e3a8a' },   // Irish - blue
-};
+const COLOR_PALETTES = [
+  { from: '#b45309', to: '#92400e', tag: '#fef3c7', tagText: '#78350f' },  // amber
+  { from: '#dc2626', to: '#991b1b', tag: '#fee2e2', tagText: '#7f1d1d' },  // red
+  { from: '#047857', to: '#065f46', tag: '#d1fae5', tagText: '#064e3b' },  // green
+  { from: '#1d4ed8', to: '#1e3a8a', tag: '#dbeafe', tagText: '#1e3a8a' },  // blue
+  { from: '#7c3aed', to: '#4c1d95', tag: '#ede9fe', tagText: '#4c1d95' },  // purple
+  { from: '#0e7490', to: '#164e63', tag: '#cffafe', tagText: '#164e63' },  // cyan
+  { from: '#b91c1c', to: '#7f1d1d', tag: '#ffe4e6', tagText: '#881337' },  // rose
+  { from: '#0f766e', to: '#134e4a', tag: '#ccfbf1', tagText: '#134e4a' },  // teal
+];
+function getColor(id) { return COLOR_PALETTES[(id - 1) % COLOR_PALETTES.length]; }
 
 function Badge({ children, style }) {
   return (
@@ -26,7 +31,7 @@ function Badge({ children, style }) {
 }
 
 function WhiskeyCard({ whiskey, isSelected, onClick }) {
-  const c = WHISKEY_COLORS[whiskey.id] || WHISKEY_COLORS[1];
+  const c = getColor(whiskey.id);
   return (
     <div
       onClick={onClick}
@@ -172,6 +177,12 @@ export default function App() {
 
   async function onSubmit(e) {
     e.preventDefault();
+    // ── Phone validation: exactly 10 digits ──
+    const digits = form.phone.replace(/\D/g, '');
+    if (digits.length !== 10) {
+      setError('⚠️ กรุณากรอกเบอร์โทรศัพท์ให้ครบ 10 หลัก (ตัวเลขเท่านั้น)');
+      return;
+    }
     setSubmitting(true);
     setError(null);
     setSuccessMsg(null);
@@ -179,7 +190,7 @@ export default function App() {
       const res = await fetch(`${API_BASE}/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, phone: digits }),
       });
       if (!res.ok) throw await res.json().catch(() => ({ error: 'server_error' }));
       const created = await res.json();
@@ -341,14 +352,27 @@ export default function App() {
                     />
                   </InputField>
                   <InputField label="เบอร์ติดต่อ" required>
-                    <input
-                      type="tel"
-                      placeholder="08x-xxx-xxxx"
-                      value={form.phone}
-                      onChange={field('phone')}
-                      required
-                      style={inputStyle}
-                    />
+                    <div>
+                      <input
+                        type="tel"
+                        placeholder="0812345678"
+                        value={form.phone}
+                        onChange={e => {
+                          const v = e.target.value.replace(/\D/g, '').slice(0, 10);
+                          setForm(f => ({ ...f, phone: v }));
+                        }}
+                        required
+                        maxLength={10}
+                        style={{
+                          ...inputStyle,
+                          borderColor: form.phone.length > 0 && form.phone.length < 10 ? '#dc2626' : form.phone.length === 10 ? '#10b981' : '#323548',
+                        }}
+                      />
+                      <div style={{ marginTop: '0.3rem', fontSize: '0.75rem', textAlign: 'right',
+                        color: form.phone.length === 10 ? '#10b981' : form.phone.length > 0 ? '#f59e0b' : '#4b5563' }}>
+                        {form.phone.length}/10 หลัก {form.phone.length === 10 ? '✓' : ''}
+                      </div>
+                    </div>
                   </InputField>
                 </div>
 
@@ -456,7 +480,7 @@ export default function App() {
                   </thead>
                   <tbody>
                     {orders.map((o, idx) => {
-                      const c = WHISKEY_COLORS[o.whiskey_id] || WHISKEY_COLORS[1];
+                      const c = getColor(o.whiskey_id);
                       return (
                         <tr key={o.id} style={{ borderBottom: idx < orders.length - 1 ? '1px solid #1a1c26' : 'none', transition: 'background 0.15s' }}>
                           <td style={{ padding: '0.9rem 1rem' }}>

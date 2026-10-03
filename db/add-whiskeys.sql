@@ -1,0 +1,22 @@
+-- เพิ่มวิสกี้อีก 20 ชนิด
+INSERT INTO whiskeys (name, category, origin, description, price, icon) VALUES
+('Johnnie Walker Black Label',  'Blended Scotch',       'Scotland', 'หอมสโมคกี้ นุ่มลึก บ่ม 12 ปี ตำนานแห่งสก็อตแลนด์',             '฿1,590', '🥃'),
+('Glenfiddich 15 Year',         'Single Malt Scotch',   'Scotland', 'หอมผลไม้เมดิเตอร์เรเนียน กลิ่นน้ำผึ้ง บ่มในถัง Solera',         '฿3,290', '🥃'),
+('Macallan 12 Year Sherry',     'Single Malt Scotch',   'Scotland', 'เข้มข้นด้วยกลิ่น Sherry Oak ผลไม้แห้ง และช็อกโกแลต',            '฿3,890', '🥃'),
+('Laphroaig 10 Year',           'Islay Single Malt',    'Scotland', 'รสโดดเด่น สโมคกี้เข้มข้น กลิ่นไอโอดีนและทะเล',                  '฿2,490', '🥃'),
+('Oban 14 Year',                'Highland Single Malt', 'Scotland', 'ผสมกลมกลืนระหว่าง Highland และ Islay กลิ่นผลไม้ทะเล',           '฿2,990', '🥃'),
+('Jack Daniel''s Old No. 7',    'Tennessee Whiskey',    'USA',      'ผ่านกระบวนการ Lincoln County กลิ่นวานิลลา caramel เบา',           '฿1,290', '🍸'),
+('Maker''s Mark Bourbon',       'Bourbon',              'USA',      'นุ่มละมุน หวานจากข้าวสาลี ปิดด้วยขี้ผึ้งแดงเอกลักษณ์',         '฿1,890', '🍸'),
+('Woodford Reserve',            'Bourbon',              'USA',      'กลิ่นเครื่องเทศ ช็อกโกแลต และผลไม้แห้ง บ่มในถังโอ๊คใหม่',      '฿2,390', '🍸'),
+('Bulleit Rye',                 'Rye Whiskey',          'USA',      'รสเผ็ดร้อนจาก Rye สูง กลิ่นเครื่องเทศ มิ้นต์ และโอ๊ค',        '฿1,790', '🍸'),
+('Wild Turkey 101',             'Bourbon',              'USA',      'เข้มข้น แอลกอฮอล์สูง กลิ่นวานิลลา Rye และคาราเมล',              '฿1,690', '🍸'),
+('Hibiki Japanese Harmony',     'Blended Japanese',     'Japan',    'ผสมเชี่ยวชาญจาก 3 โรงกลั่น กลิ่นดอกส้ม และฮันนี่',            '฿4,290', '🍶'),
+('Hakushu 12 Year',             'Single Malt Japanese', 'Japan',    'สดชื่น กลิ่นไม้เขียวจากป่าภูเขาไฟ ในโรงกลั่นที่สูงที่สุด',    '฿4,590', '🍶'),
+('Nikka Coffey Grain',          'Grain Japanese',       'Japan',    'หวานนุ่ม กลิ่น Tropical Fruit จากกระบวนการ Coffey Still',       '฿3,290', '🍶'),
+('Yoichi Single Malt',          'Single Malt Japanese', 'Japan',    'เข้มข้น สโมคกี้เล็กน้อย สร้างโดยผู้บุกเบิกวิสกี้ญี่ปุ่น',    '฿3,890', '🍶'),
+('Mars Shinshu Iwai',           'Blended Japanese',     'Japan',    'รสชาติสดใส จากโรงกลั่นบนเทือกเขาแอลป์ญี่ปุ่น',                 '฿2,190', '🍶'),
+('Jameson Black Barrel',        'Irish Whiskey',        'Ireland',  'บ่มซ้ำในถัง Bourbon ให้กลิ่นวานิลลา น้ำตาล และไม้หอม',          '฿2,290', '🥂'),
+('Redbreast 12 Year',           'Single Pot Still',     'Ireland',  'สไตล์ Single Pot Still เอกลักษณ์ไอริช กลิ่นผลไม้ เครื่องเทศ', '฿2,890', '🥂'),
+('Green Spot',                  'Single Pot Still',     'Ireland',  'หายาก นุ่มนวล กลิ่นแอปเปิ้ลสด แบร์ลีย์ และ Toasted Oak',      '฿2,690', '🥂'),
+('Teeling Single Grain',        'Single Grain Irish',   'Ireland',  'จากโรงกลั่นดับลินแห่งใหม่ นุ่มละมุน กลิ่นวานิลลาและผลไม้',    '฿2,190', '🥂'),
+('Writers'' Tears Copper Pot',  'Blend Irish',          'Ireland',  'ผสมพิเศษ Single Pot Still + Single Malt กลิ่นผลไม้ เบา นุ่ม',  '฿2,490', '🥂');
