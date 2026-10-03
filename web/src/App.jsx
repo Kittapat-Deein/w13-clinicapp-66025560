@@ -238,6 +238,9 @@ export default function App() {
 
   const totalOrders = orders.length;
   const totalBottles = orders.reduce((sum, o) => sum + (o.quantity || 1), 0);
+  const selectedWhiskey = whiskeys.find(w => String(w.id) === String(form.whiskey_id));
+  const numericPrice = selectedWhiskey && selectedWhiskey.price ? parseInt(selectedWhiskey.price.replace(/[^\d]/g, ''), 10) : 0;
+  const subtotalFormatted = numericPrice > 0 ? (numericPrice * (form.quantity || 1)).toLocaleString() : null;
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#0d0f18', color: '#e5e7eb', fontFamily: "'Prompt', system-ui, sans-serif" }}>
@@ -510,39 +513,92 @@ export default function App() {
                   </InputField>
                 </div>
 
-                {/* Row: Date + Qty */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '0.85rem', alignItems: 'end' }}>
-                  <InputField label="วัน-เวลา นัดรับ" required>
-                    <input
-                      type="datetime-local"
-                      value={form.reservation_time}
-                      onChange={field('reservation_time')}
-                      required
-                      style={{ ...inputStyle, colorScheme: 'dark' }}
-                    />
-                  </InputField>
-                  <InputField label="จำนวน (ขวด)">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <button
-                        type="button"
-                        onClick={() => setForm(f => ({ ...f, quantity: Math.max(1, f.quantity - 1) }))}
-                        style={{ width: '36px', height: '36px', borderRadius: '8px', border: '1.5px solid #374151', background: '#1c1e2c', color: '#f3f4f6', fontSize: '1.1rem', cursor: 'pointer', flexShrink: 0 }}
-                      >−</button>
-                      <input
-                        type="number"
-                        min="1"
-                        max="20"
-                        value={form.quantity}
-                        onChange={e => setForm(f => ({ ...f, quantity: Math.max(1, parseInt(e.target.value) || 1) }))}
-                        style={{ ...inputStyle, width: '52px', textAlign: 'center', padding: '0.4rem', flexShrink: 0 }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setForm(f => ({ ...f, quantity: Math.min(20, f.quantity + 1) }))}
-                        style={{ width: '36px', height: '36px', borderRadius: '8px', border: '1.5px solid #374151', background: '#1c1e2c', color: '#f3f4f6', fontSize: '1.1rem', cursor: 'pointer', flexShrink: 0 }}
-                      >+</button>
+                {/* Row: Date */}
+                <InputField label="วัน-เวลา นัดรับ" required>
+                  <input
+                    type="datetime-local"
+                    value={form.reservation_time}
+                    onChange={field('reservation_time')}
+                    required
+                    style={{ ...inputStyle, colorScheme: 'dark' }}
+                  />
+                </InputField>
+
+                {/* Row: Qty Stepper & Price Summary */}
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  background: '#1a1c28',
+                  padding: '0.75rem 0.9rem',
+                  borderRadius: '10px',
+                  border: '1px solid #27293a',
+                  boxSizing: 'border-box',
+                }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#e5e7eb' }}>
+                      จำนวน (ขวด)
+                    </label>
+                    <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '0.15rem' }}>
+                      {selectedWhiskey ? `${selectedWhiskey.price} / ขวด` : 'เลือกรายการด้านบน'}
                     </div>
-                  </InputField>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                    <button
+                      type="button"
+                      onClick={() => setForm(f => ({ ...f, quantity: Math.max(1, f.quantity - 1) }))}
+                      style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '7px',
+                        border: '1.5px solid #374151',
+                        background: '#12141f',
+                        color: '#f3f4f6',
+                        fontSize: '1.1rem',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: 0,
+                        lineHeight: 1,
+                      }}
+                    >−</button>
+                    <input
+                      type="number"
+                      min="1"
+                      max="20"
+                      value={form.quantity}
+                      onChange={e => setForm(f => ({ ...f, quantity: Math.max(1, parseInt(e.target.value) || 1) }))}
+                      style={{
+                        ...inputStyle,
+                        width: '44px',
+                        textAlign: 'center',
+                        padding: '0.35rem 0.2rem',
+                        fontWeight: '700',
+                        color: '#fcd34d',
+                        border: '1px solid #374151',
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setForm(f => ({ ...f, quantity: Math.min(20, f.quantity + 1) }))}
+                      style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '7px',
+                        border: '1.5px solid #374151',
+                        background: '#12141f',
+                        color: '#f3f4f6',
+                        fontSize: '1.1rem',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: 0,
+                        lineHeight: 1,
+                      }}
+                    >+</button>
+                  </div>
                 </div>
 
                 {/* Submit */}
@@ -565,7 +621,7 @@ export default function App() {
                     letterSpacing: '0.02em',
                   }}
                 >
-                  {submitting ? '⏳ กำลังบันทึก...' : '✓ ยืนยันการสั่งจอง'}
+                  {submitting ? '⏳ กำลังบันทึก...' : `✓ ยืนยันการสั่งจอง${subtotalFormatted ? ` (฿${subtotalFormatted})` : ''}`}
                 </button>
 
               </form>
