@@ -141,6 +141,17 @@ export default function App() {
   const [successMsg, setSuccessMsg] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [cancellingId, setCancellingId] = useState(null);
+  const [search, setSearch] = useState('');
+
+  // Filtered whiskeys based on search
+  const filteredWhiskeys = search.trim()
+    ? whiskeys.filter(w =>
+        w.name.toLowerCase().includes(search.toLowerCase()) ||
+        w.origin.toLowerCase().includes(search.toLowerCase()) ||
+        w.category.toLowerCase().includes(search.toLowerCase()) ||
+        (w.description && w.description.toLowerCase().includes(search.toLowerCase()))
+      )
+    : whiskeys;
 
   const [form, setForm] = useState({
     whiskey_id: '',
@@ -277,17 +288,46 @@ export default function App() {
         )}
 
         {/* ── TOP GRID: MENU + FORM ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1.75rem', marginBottom: '2rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 380px', gap: '1.75rem', marginBottom: '2rem', alignItems: 'start' }}>
 
-          {/* LEFT: Whiskey Menu */}
+          {/* LEFT: Whiskey Menu — scrollable */}
           <section>
+            {/* Header + Search */}
             <div style={{ marginBottom: '1rem' }}>
-              <h2 style={{ margin: 0, fontSize: '1.05rem', fontWeight: '700', color: '#f3f4f6', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <h2 style={{ margin: '0 0 0.3rem', fontSize: '1.05rem', fontWeight: '700', color: '#f3f4f6', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 🍾 เลือกชนิดวิสกี้
               </h2>
-              <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#6b7280' }}>
+              <p style={{ margin: '0 0 0.75rem', fontSize: '0.8rem', color: '#6b7280' }}>
                 คลิกการ์ดเพื่อเลือก รายการที่เลือกจะใส่ลงฟอร์มอัตโนมัติ
               </p>
+
+              {/* Search box */}
+              <div style={{ position: 'relative' }}>
+                <span style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', fontSize: '0.95rem', pointerEvents: 'none', color: '#6b7280' }}>🔍</span>
+                <input
+                  type="text"
+                  placeholder="ค้นหาวิสกี้... เช่น Scotch, Japan, Bourbon"
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  style={{
+                    ...inputStyle,
+                    paddingLeft: '2.25rem',
+                    paddingRight: search ? '2.25rem' : '0.9rem',
+                    fontSize: '0.88rem',
+                  }}
+                />
+                {search && (
+                  <button
+                    onClick={() => setSearch('')}
+                    style={{ position: 'absolute', right: '0.6rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#6b7280', fontSize: '1rem', cursor: 'pointer', padding: '0.2rem', lineHeight: 1 }}
+                  >✕</button>
+                )}
+              </div>
+              {search && (
+                <div style={{ marginTop: '0.4rem', fontSize: '0.75rem', color: '#6b7280' }}>
+                  พบ {filteredWhiskeys.length} รายการ จาก {whiskeys.length} ทั้งหมด
+                </div>
+              )}
             </div>
 
             {loading ? (
@@ -295,9 +335,17 @@ export default function App() {
                 <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>⏳</div>
                 กำลังโหลดรายการ...
               </div>
+            ) : filteredWhiskeys.length === 0 ? (
+              <div style={{ background: '#14161f', borderRadius: '14px', padding: '3rem', textAlign: 'center', color: '#6b7280' }}>
+                <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🔍</div>
+                <p style={{ margin: 0 }}>ไม่พบวิสกี้ที่ค้นหา</p>
+                <button onClick={() => setSearch('')} style={{ marginTop: '0.75rem', background: 'none', border: '1px solid #374151', color: '#9ca3af', padding: '0.35rem 0.9rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', fontFamily: 'inherit' }}>
+                  ล้างการค้นหา
+                </button>
+              </div>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '0.85rem' }}>
-                {whiskeys.map(w => (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.85rem' }}>
+                {filteredWhiskeys.map(w => (
                   <WhiskeyCard
                     key={w.id}
                     whiskey={w}
@@ -309,8 +357,8 @@ export default function App() {
             )}
           </section>
 
-          {/* RIGHT: Order Form */}
-          <section>
+          {/* RIGHT: Order Form — sticky */}
+          <section style={{ position: 'sticky', top: '1.25rem', alignSelf: 'start' }}>
             <div style={{ marginBottom: '1rem' }}>
               <h2 style={{ margin: 0, fontSize: '1.05rem', fontWeight: '700', color: '#f3f4f6', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 📝 ฟอร์มสั่งจอง
