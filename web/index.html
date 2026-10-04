@@ -8,14 +8,29 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+      *, *::before, *::after {
+        box-sizing: border-box;
+      }
+      body {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        touch-action: manipulation;
+        overflow-x: hidden;
+      }
+      /* Prevent iOS Safari auto-zoom on input focus */
+      input, select, textarea, button {
+        font-family: inherit;
+      }
+      input[type="text"], input[type="tel"], input[type="datetime-local"], select {
+        font-size: 16px !important;
+      }
       /* Sleek scrollbar */
       ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
+        width: 6px;
+        height: 6px;
       }
       ::-webkit-scrollbar-track {
         background: #14161f;
-        border-radius: 4px;
       }
       ::-webkit-scrollbar-thumb {
         background: #2d3146;
