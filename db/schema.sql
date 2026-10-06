@@ -22,6 +22,7 @@ CREATE TABLE whiskey_orders (
   phone            NVARCHAR(50)   NOT NULL,
   reservation_time DATETIME2      NOT NULL,
   quantity         INT            NOT NULL DEFAULT 1,
+  cancel_token     NVARCHAR(64)   NULL,
   created          DATETIME2      NOT NULL DEFAULT SYSUTCDATETIME(),
   CONSTRAINT fk_orders_whiskey
     FOREIGN KEY (whiskey_id) REFERENCES whiskeys(id)

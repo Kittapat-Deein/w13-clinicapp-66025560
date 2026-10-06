@@ -2,7 +2,12 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import sql from 'mssql';
+import { randomBytes } from 'crypto';
 import { getSqlPool } from './db.js';
+
+function generateToken() {
+  return randomBytes(32).toString('hex'); // 64-char hex token
+}
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -99,6 +104,7 @@ async function handleCreateOrder(req, res, next) {
     }
 
     const whiskey_name = checkW.recordset[0].name;
+    const cancel_token = generateToken();
 
     const insertResult = await pool.request()
       .input('whiskey_id', sql.Int, whiskey_id)
@@ -107,16 +113,18 @@ async function handleCreateOrder(req, res, next) {
       .input('phone', sql.NVarChar(50), phone)
       .input('reservation_time', sql.DateTime2, new Date(reservation_time))
       .input('quantity', sql.Int, quantity)
+      .input('cancel_token', sql.NVarChar(64), cancel_token)
       .query(`
-        INSERT INTO whiskey_orders (whiskey_id, whiskey_name, customer_name, phone, reservation_time, quantity)
+        INSERT INTO whiskey_orders (whiskey_id, whiskey_name, customer_name, phone, reservation_time, quantity, cancel_token)
         OUTPUT INSERTED.id, INSERTED.whiskey_id, INSERTED.whiskey_name, INSERTED.customer_name,
                INSERTED.phone, INSERTED.reservation_time, INSERTED.quantity, INSERTED.created
-        VALUES (@whiskey_id, @whiskey_name, @customer_name, @phone, @reservation_time, @quantity)
+        VALUES (@whiskey_id, @whiskey_name, @customer_name, @phone, @reservation_time, @quantity, @cancel_token)
       `);
 
     const created = insertResult.recordset[0];
     res.status(201).json({
       ...created,
+      cancel_token,              // ← ส่งกลับให้ frontend เก็บใน localStorage
       patient_name: created.customer_name,
       doctor_name: created.whiskey_name,
       slot: created.reservation_time
@@ -127,20 +135,46 @@ async function handleCreateOrder(req, res, next) {
 app.post('/orders', handleCreateOrder);
 app.post('/appointments', handleCreateOrder);
 
-// DELETE Order (Cancel)
+// DELETE Order (Cancel) — requires matching cancel_token
 async function handleDeleteOrder(req, res, next) {
   const id = Number(req.params.id);
   if (!Number.isInteger(id) || id <= 0) {
     return res.status(400).json({ error: 'invalid_id' });
   }
+
+  // Token comes from JSON body: { cancel_token: "..." }
+  const cancel_token = String(req.body?.cancel_token || '').trim();
+  if (!cancel_token) {
+    return res.status(403).json({
+      error: 'token_required',
+      message: 'ไม่สามารถลบได้ — กรุณาใช้เบราว์เซอร์เดิมที่ทำการจอง'
+    });
+  }
+
   try {
     const pool = await getSqlPool();
-    const r = await pool.request()
+
+    // Fetch existing order to verify token
+    const existing = await pool.request()
+      .input('id', sql.Int, id)
+      .query('SELECT cancel_token FROM whiskey_orders WHERE id = @id');
+
+    if (existing.recordset.length === 0) {
+      return res.status(404).json({ error: 'not_found', message: 'ไม่พบรายการจองนี้' });
+    }
+
+    const stored = existing.recordset[0].cancel_token;
+    if (!stored || stored !== cancel_token) {
+      return res.status(403).json({
+        error: 'token_mismatch',
+        message: 'ไม่มีสิทธิ์ยกเลิกรายการนี้ — ต้องใช้เบราว์เซอร์เดิมที่ทำการจอง'
+      });
+    }
+
+    await pool.request()
       .input('id', sql.Int, id)
       .query('DELETE FROM whiskey_orders WHERE id = @id');
-    if (r.rowsAffected[0] === 0) {
-      return res.status(404).json({ error: 'not_found' });
-    }
+
     res.json({ ok: true, message: 'ยกเลิกรายการจองเรียบร้อย' });
   } catch (e) { next(e); }
 }

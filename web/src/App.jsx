@@ -197,6 +197,30 @@ export default function App() {
     return e => setForm(f => ({ ...f, [key]: e.target.value }));
   }
 
+  // ── My Cancel Tokens (keyed by order ID, stored in localStorage) ──
+  const [myTokens, setMyTokens] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('whiskey_cancel_tokens') || '{}');
+    } catch { return {}; }
+  });
+
+  function saveToken(orderId, token) {
+    setMyTokens(prev => {
+      const updated = { ...prev, [String(orderId)]: token };
+      try { localStorage.setItem('whiskey_cancel_tokens', JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+  }
+
+  function removeToken(orderId) {
+    setMyTokens(prev => {
+      const updated = { ...prev };
+      delete updated[String(orderId)];
+      try { localStorage.setItem('whiskey_cancel_tokens', JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+  }
+
   async function loadData(silent = false) {
     try {
       if (!silent) setError(null);
@@ -237,6 +261,10 @@ export default function App() {
       });
       if (!res.ok) throw await res.json().catch(() => ({ error: 'server_error' }));
       const created = await res.json();
+      // ── Save cancel token to localStorage ──
+      if (created.cancel_token) {
+        saveToken(created.id, created.cancel_token);
+      }
       setSuccessMsg(`🎉 จองสำเร็จ! คุณ ${created.customer_name} ได้ทำการจอง ${created.whiskey_name} เรียบร้อยแล้ว`);
       setForm(f => ({ ...f, customer_name: '', phone: '', reservation_time: '', quantity: 1 }));
       if (isMobile) {
@@ -251,14 +279,27 @@ export default function App() {
   }
 
   async function onCancel(id, customerName, whiskeyName) {
+    const token = myTokens[String(id)];
+    if (!token) {
+      setError('❌ ไม่สามารถยกเลิกได้ — ต้องใช้เบราว์เซอร์เดิมที่ทำการจอง');
+      return;
+    }
     if (!confirm(`ยืนยันยกเลิกการจอง "${whiskeyName}" ของคุณ ${customerName}?`)) return;
     setCancellingId(id);
     setError(null);
     setSuccessMsg(null);
     try {
-      const res = await fetch(`${API_BASE}/orders/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw await res.json().catch(() => ({ error: 'delete_error' }));
-      setSuccessMsg(`ยกเลิกรายการของคุณ ${customerName} เรียบร้อยแล้ว`);
+      const res = await fetch(`${API_BASE}/orders/${id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cancel_token: token }),
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({ message: 'เกิดข้อผิดพลาด' }));
+        throw new Error(errData.message || 'ไม่สามารถยกเลิกได้');
+      }
+      removeToken(id);
+      setSuccessMsg(`✅ ยกเลิกรายการของคุณ ${customerName} เรียบร้อยแล้ว`);
       await loadData(true);
     } catch (err) {
       setError(err.message || 'ไม่สามารถยกเลิกได้');
@@ -936,29 +977,44 @@ export default function App() {
                           </div>
                         </div>
 
-                        {/* Cancel Button */}
-                        <button
-                          onClick={() => onCancel(o.id, o.customer_name, o.whiskey_name)}
-                          disabled={cancellingId === o.id}
-                          style={{
+                        {/* Cancel Button — only if this browser created this order */}
+                        {myTokens[String(o.id)] ? (
+                          <button
+                            onClick={() => onCancel(o.id, o.customer_name, o.whiskey_name)}
+                            disabled={cancellingId === o.id}
+                            style={{
+                              width: '100%',
+                              padding: '0.55rem',
+                              background: 'transparent',
+                              color: '#ef4444',
+                              border: '1px solid #3f1212',
+                              borderRadius: '8px',
+                              fontSize: '0.82rem',
+                              fontWeight: '600',
+                              cursor: cancellingId === o.id ? 'not-allowed' : 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '0.35rem',
+                              fontFamily: 'inherit',
+                            }}
+                          >
+                            {cancellingId === o.id ? '⏳ กำลังยกเลิก...' : '✕ ยกเลิกการจองของฉัน'}
+                          </button>
+                        ) : (
+                          <div style={{
                             width: '100%',
-                            padding: '0.55rem',
-                            background: 'transparent',
-                            color: '#ef4444',
-                            border: '1px solid #3f1212',
+                            padding: '0.45rem',
+                            background: '#12141f',
                             borderRadius: '8px',
-                            fontSize: '0.82rem',
-                            fontWeight: '600',
-                            cursor: cancellingId === o.id ? 'not-allowed' : 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '0.35rem',
-                            fontFamily: 'inherit',
-                          }}
-                        >
-                          {cancellingId === o.id ? '⏳ กำลังยกเลิก...' : '✕ ยกเลิกการจอง'}
-                        </button>
+                            fontSize: '0.76rem',
+                            color: '#4b5563',
+                            textAlign: 'center',
+                            border: '1px solid #1e2030',
+                          }}>
+                            🔒 จองโดยผู้ใช้อื่น — ไม่สามารถยกเลิกได้
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -1018,25 +1074,44 @@ export default function App() {
                               {new Date(o.created).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}
                             </td>
                             <td style={{ padding: '0.9rem 1rem', textAlign: 'center' }}>
-                              <button
-                                onClick={() => onCancel(o.id, o.customer_name, o.whiskey_name)}
-                                disabled={cancellingId === o.id}
-                                style={{
-                                  background: 'transparent',
-                                  color: '#ef4444',
-                                  border: '1px solid #3f1212',
-                                  padding: '0.3rem 0.75rem',
-                                  borderRadius: '7px',
-                                  fontSize: '0.78rem',
-                                  fontWeight: '600',
-                                  cursor: cancellingId === o.id ? 'not-allowed' : 'pointer',
-                                  fontFamily: 'inherit',
-                                  whiteSpace: 'nowrap',
-                                  opacity: cancellingId === o.id ? 0.6 : 1,
-                                }}
-                              >
-                                {cancellingId === o.id ? '⏳' : '✕ ยกเลิก'}
-                              </button>
+                              {myTokens[String(o.id)] ? (
+                                <button
+                                  onClick={() => onCancel(o.id, o.customer_name, o.whiskey_name)}
+                                  disabled={cancellingId === o.id}
+                                  title="ยกเลิกการจองของคุณ"
+                                  style={{
+                                    background: 'transparent',
+                                    color: '#ef4444',
+                                    border: '1px solid #3f1212',
+                                    padding: '0.3rem 0.75rem',
+                                    borderRadius: '7px',
+                                    fontSize: '0.78rem',
+                                    fontWeight: '600',
+                                    cursor: cancellingId === o.id ? 'not-allowed' : 'pointer',
+                                    fontFamily: 'inherit',
+                                    whiteSpace: 'nowrap',
+                                    opacity: cancellingId === o.id ? 0.6 : 1,
+                                  }}
+                                >
+                                  {cancellingId === o.id ? '⏳' : '✕ ยกเลิก'}
+                                </button>
+                              ) : (
+                                <span
+                                  title="รายการนี้จองโดยผู้อื่น คุณไม่สามารถยกเลิกได้"
+                                  style={{
+                                    fontSize: '0.75rem',
+                                    color: '#4b5563',
+                                    background: '#12141f',
+                                    padding: '0.25rem 0.5rem',
+                                    borderRadius: '6px',
+                                    border: '1px solid #1e2030',
+                                    display: 'inline-block',
+                                    cursor: 'default',
+                                  }}
+                                >
+                                  🔒 ของผู้อื่น
+                                </span>
+                              )}
                             </td>
                           </tr>
                         );
